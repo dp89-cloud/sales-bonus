@@ -72,60 +72,56 @@ function analyzeSalesData(data, options) {
     const sellerIndex = Object.fromEntries(sellerStats.map(seller => [seller.seller_id, seller]));
     const productIndex = Object.fromEntries(data.products.map(product => [product.sku, product]));
 
-    // Этап 3, шаг 1:
-    // @TODO: Расчет выручки и прибыли для каждого продавца
-    data.purchase_records.forEach(record => { // Чек 
-        const seller = sellerIndex[record.seller_id]; // Продавец
+     // Этап 3, шаг 1: Расчёт выручки и прибыли
+    data.purchase_records.forEach(record => {
+        const seller = sellerIndex[record.seller_id];
         if (!seller) return;
 
-        seller.sales_count += 1;// Увеличить количество продаж 
-        
-        // Увеличить общую сумму выручки всех продаж
-        
+        // Увеличиваем количество чеков (продаж)
+        seller.sales_count += 1;
 
-        // Расчёт прибыли для каждого товара
+        // Выручка берётся из чека целиком
+        const totalRevenue = record.total_amount;
+        seller.revenue += totalRevenue;
+
+        // Считаем общую себестоимость товаров в чеке
+        let totalCost = 0;
         record.items.forEach(item => {
-            const product = productIndex[item.sku]; // Товар
-            if (!product) return; // Товар не найден — пропускаем
-            const cost = product.purchase_price * item.quantity; // Посчитать себестоимость (cost) товара как product.purchase_price, умноженную на количество товаров из чека
-            const revenue = calculateRevenue(item, product); // Посчитать выручку (revenue) с учётом скидки через функцию calculateRevenue
-            const profit = revenue - cost; // Посчитать прибыль: выручка минус себестоимость
+            const product = productIndex[item.sku];
+            if (!product) return;
 
-        // Увеличить общую накопленную прибыль (profit) у продавца  
-            seller.revenue += revenue;
-            seller.profit += profit;
-            // Учёт количества проданных товаров
-            if (!seller.products_sold[item.sku]) {
-                seller.products_sold[item.sku] = 0;
-            }
-            seller.products_sold[item.sku] = (seller.products_sold[item.sku] || 0) + item.quantity; // По артикулу товара увеличить его проданное количество у продавца
+            const cost = product.purchase_price * item.quantity;
+            totalCost += cost;
+
+            // Обновляем счётчик проданных SKU
+            seller.products_sold[item.sku] = (seller.products_sold[item.sku] || 0) + item.quantity;
         });
- }); 
 
-    // Этап 3, шаг 2: 
-    // @TODO: Сортировка продавцов по прибыли
+        // Прибыль = выручка - себестоимость
+        seller.profit += (totalRevenue - totalCost);
+    });
+
+    // Этап 3, шаг 2: Сортировка по прибыли (убывание)
     sellerStats.sort((a, b) => b.profit - a.profit);
 
-    // Этап 3, шаг 3:
-    // @TODO: Назначение премий на основе ранжирования
+    // Этап 3, шаг 3: Бонусы и топ-10 товаров
     sellerStats.forEach((seller, index) => {
-    seller.bonus = calculateBonusByProfit(index, sellerStats.length, seller); // 1. Считаем бонус
+        seller.bonus = calculateBonusByProfit(index, sellerStats.length, seller);
 
-    seller.top_products = Object.entries(seller.products_sold) // 2. Формируем топ-10 товаров
-        .map(([sku, quantity]) => ({ sku, quantity }))     // → [{ sku, quantity }, ...]
-        .sort((a, b) => b.quantity - a.quantity)           // сортируем по убыванию
-        .slice(0, 10)                                      // берём первые 10
-});
+        seller.top_products = Object.entries(seller.products_sold)
+            .map(([sku, quantity]) => ({ sku, quantity }))
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, 10);
+    });
 
-    // Этап 3, шаг 4:
-    // @TODO: Подготовка итоговой коллекции с нужными полями
+    // Этап 3, шаг 4: Финальный результат
     return sellerStats.map(seller => ({
         seller_id: seller.seller_id,
         name: seller.name,
         revenue: +seller.revenue.toFixed(2),
         profit: +seller.profit.toFixed(2),
         sales_count: seller.sales_count,
-        top_products: seller.top_products, // уже массив объектов { sku, quantity }
+        top_products: seller.top_products,
         bonus: +seller.bonus.toFixed(2)
-}));
+    }));
 }
