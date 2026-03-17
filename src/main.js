@@ -8,7 +8,7 @@
 function calculateSimpleRevenue(purchase, _product) {
    // @TODO: Расчет выручки от операции
    const { discount, sale_price, quantity } = purchase;
-   return (sale_price - discount) * quantity;
+   return sale_price * quantity * (1 - (discount/100));
 }
 
 /**
@@ -80,8 +80,8 @@ function analyzeSalesData(data, options) {
 
     // Этап 3, шаг 1:
     // @TODO: Расчет выручки и прибыли для каждого продавца
-    data.purchase_records.forEach(record => { // Чек 
-        const seller = sellerIndex[record.seller_id]; // Продавец
+    data.purchase_records.forEach(record => {// Чек
+        const seller = sellerIndex[record.seller_id];// Продавец
         if (!seller) return;
         seller.sales_count += 1;// Увеличить количество продаж 
 
@@ -89,13 +89,13 @@ function analyzeSalesData(data, options) {
 
         // Расчёт прибыли для каждого товара
         record.items.forEach(item => {
-            const product = productIndex[item.sku]; // Товар
-            if (!product) return; // Товар не найден — пропускаем
+            const product = productIndex[item.sku];// Товар
+            if (!product) return;// Товар не найден — пропускаем
             
-            const revenue = calculateRevenue(item, product); // Посчитать выручку (revenue) с учётом скидки через функцию calculateRevenue
-            const cost = product.purchase_price * item.quantity; // Посчитать себестоимость (cost) товара как product.purchase_price, умноженную на количество товаров из чека
-            const profit = revenue - cost; // Посчитать прибыль: выручка минус себестоимость
-        // Увеличить общую накопленную прибыль (profit) у продавца  
+            const revenue = calculateRevenue(item, product);// Посчитать выручку (revenue) с учётом скидки через функцию calculateRevenue
+            const cost = product.purchase_price * item.quantity;// Посчитать себестоимость (cost) товара как product.purchase_price, умноженную на количество товаров из чека
+            const profit = revenue - cost;// Посчитать прибыль: выручка минус себестоимость
+        // Увеличить общую накопленную прибыль (profit) у продавца 
             seller.revenue += revenue;
             seller.profit += profit;
         // Учёт количества проданных товаров
@@ -110,12 +110,12 @@ function analyzeSalesData(data, options) {
     // Этап 3, шаг 3:
     // @TODO: Назначение премий на основе ранжирования
     sellerStats.forEach((seller, index) => {
-    seller.bonus = calculateBonusByProfit(index, sellerStats.length, seller); // 1. Считаем бонус
+    seller.bonus = calculateBonusByProfit(index, sellerStats.length, seller);// 1. Считаем бонус
 
-    seller.top_products = Object.entries(seller.products_sold) // 2. Формируем топ-10 товаров
-        .map(([sku, quantity]) => ({ sku, quantity }))     // → [{ sku, quantity }, ...]
-        .sort((a, b) => b.quantity - a.quantity)           // сортируем по убыванию
-        .slice(0, 10)                                      // берём первые 10
+    seller.top_products = Object.entries(seller.products_sold)// 2. Формируем топ-10 товаров
+        .map(([sku, quantity]) => ({ sku, quantity }))// → [{ sku, quantity }, ...]
+        .sort((a, b) => b.quantity - a.quantity)// сортируем по убыванию
+        .slice(0, 10)// берём первые 10
 });
 
     // Этап 3, шаг 4:
@@ -126,7 +126,7 @@ function analyzeSalesData(data, options) {
         revenue: +seller.revenue.toFixed(2),
         profit: +seller.profit.toFixed(2),
         sales_count: seller.sales_count,
-        top_products: seller.top_products, // уже массив объектов { sku, quantity }
+        top_products: seller.top_products,// уже массив объектов { sku, quantity }
         bonus: +seller.bonus.toFixed(2)
 }));
 }
