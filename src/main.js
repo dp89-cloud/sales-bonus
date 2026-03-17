@@ -83,9 +83,9 @@ function analyzeSalesData(data, options) {
     data.purchase_records.forEach(record => {// Чек
         const seller = sellerIndex[record.seller_id];// Продавец
         if (!seller) return;
-        seller.sales_count += 1;// Увеличить количество продаж 
-
-        // Увеличить общую сумму выручки всех продаж
+        
+        seller.sales_count += 1;// Увеличить количество продаж
+        seller.revenue += record.total_amount;// Увеличить общую сумму выручки всех продаж
 
         // Расчёт прибыли для каждого товара
         record.items.forEach(item => {
@@ -96,7 +96,6 @@ function analyzeSalesData(data, options) {
             const cost = product.purchase_price * item.quantity;// Посчитать себестоимость (cost) товара как product.purchase_price, умноженную на количество товаров из чека
             const profit = revenue - cost;// Посчитать прибыль: выручка минус себестоимость
         // Увеличить общую накопленную прибыль (profit) у продавца 
-            seller.revenue += revenue;
             seller.profit += profit;
         // Учёт количества проданных товаров
             seller.products_sold[item.sku] = (seller.products_sold[item.sku] || 0) + item.quantity; // По артикулу товара увеличить его проданное количество у продавца
@@ -110,7 +109,7 @@ function analyzeSalesData(data, options) {
     // Этап 3, шаг 3:
     // @TODO: Назначение премий на основе ранжирования
     sellerStats.forEach((seller, index) => {
-    seller.bonus = calculateBonusByProfit(index, sellerStats.length, seller);// 1. Считаем бонус
+    seller.bonus = calculateBonus(index, sellerStats.length, seller);// 1. Считаем бонус
 
     seller.top_products = Object.entries(seller.products_sold)// 2. Формируем топ-10 товаров
         .map(([sku, quantity]) => ({ sku, quantity }))// → [{ sku, quantity }, ...]
